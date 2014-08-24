@@ -12,18 +12,18 @@ import json
 
 def record():
     running = 1
-    print ("Writing sensor data to %s. \"Ctrl-C\" to quit" 
+    print ("Writing sensor data to: \n%s. \n\"Ctrl-C\" to quit" 
            % settings.OUTPUT_FILE)
     while running:
         try:
             angle = get_angle()
-            open(settings.OUTPUT_FILE + ".temp", "wb").write(
+            open(settings.OUTPUT_FILE, 'wb').write(
                 json.dumps([{"angle": angle}]))
-            os.rename(settings.OUTPUT_FILE + ".temp", 
-                      settings.OUTPUT_FILE)
+#            os.rename(settings.OUTPUT_FILE + ".temp", 
+#                      settings.OUTPUT_FILE)
 
             if not settings.SILENT:
-                print "\nSensor angle: " + angle
+                print "\nSensor angle: " + str(angle)
             time.sleep(settings.RATE)
 
         except (KeyboardInterrupt, SystemExit):
@@ -31,3 +31,5 @@ def record():
 
 def get_angle():
     return 0
+
+record()
