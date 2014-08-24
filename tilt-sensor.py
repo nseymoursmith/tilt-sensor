@@ -34,7 +34,15 @@ def get_angle():
     angle = 0
     return angle
 
+def data_handler(data):
+    print ("data: %s" % data)
 
+devices = hid.find_all_hid_devices()
+usage = hid.get_full_usage_id(0xff00, 0x01)
+buffer = [0x00]*65
+buffer[0]=0x0 #Endpoint
+buffer[0]=0x0 #0x00 - Read, 0x01 - Write (0x02 is response code)
+buffer[2]=0x5 #parameter identifier
 
 if not devices:
     print("Can't find HID device!")
@@ -43,26 +51,15 @@ else:
 
     device = devices[0]
     print device
-    for attr in dir(device):
-        print attr
-    print "-------------------"
-    
     try:
         device.open()
-        for report in device.find_output_reports():
-            print report
-            for attr in dir(report):
-                print attr
-            print report.get_usages()
-            usage_key = report.get_usages().keys()[0]
-            print usage_key
-            report[usage_key] = "0" 
-            report.send()
-#            report.set_raw_data(message)
-        print "-----------------"
+        reports = device.find_output_reports()
+        report = reports[0]
         device.set_raw_data_handler(data_handler)
-# 
-# device.send_output_report((0x00,0x00))
+#        print report.get_raw_data()
+        while not kbhit():
+            time.sleep(0.5)
+            report.send(buffer)
     finally:
         device.close()
 #record()
