@@ -10,6 +10,7 @@ import settings
 import json
 import struct
 import shutil
+import MySQLdb
 from msvcrt import kbhit
 
 def getSignedNumber(number, bitLength):
@@ -35,9 +36,14 @@ def data_handler(data):
         else:
             output = 4
     open(settings.OUTPUT_FILE + ".temp", 'wb').write(
-        json.dumps([{"region": output}]))
+        json.dumps([{"active": output}]))
     shutil.move(settings.OUTPUT_FILE + ".temp", 
               settings.OUTPUT_FILE)
+
+    if settings.SQL:
+        cur.execute(sqlUpdate, (output, settings.COLUMN_ID))
+        db.commit()
+
     if not settings.SILENT:
         print ("angle: %s\nregion: %s\n" % (angle, output))
         
@@ -47,6 +53,29 @@ buffer = [0x00]*65
 buffer[0]=0x0 #Endpoint
 buffer[0]=0x0 #0x00 - Read, 0x01 - Write (0x02 is response code)
 buffer[2]=0x5 #parameter identifier (0x05: single-axis angle)
+
+if settings.SQL:
+    db = MySQLdb.connect(
+        db = settings.DATABASE,
+        host = settings.HOST,
+        user = settings.USER,
+        passwd = settings.PASS
+    )
+    cur = db.cursor()
+    cur.execute("SELECT VERSION()")
+    ver = cur.fetchone()
+    print "Server version: ", ver[0]
+
+    sqlUpdate = '''
+    UPDATE mccglc_seebri_motiondetect
+    SET active = (%s)
+    WHERE id = (%s)
+    '''
+    sqlRead = '''
+    SELECT active 
+    FROM mccglc_seebri_motiondetect
+    WHERE id = (%s)
+    '''
 
 device = hid.find_all_hid_devices()[0]
 if not device:
@@ -63,5 +92,8 @@ else:
             time.sleep(settings.RATE)
     finally:
         device.close()
+        if settings.SQL:
+            cur.close()
+            db.close()
 
 
