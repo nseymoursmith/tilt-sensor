@@ -24,4 +24,5 @@ PyWinUSB:
 ---------
 
 > cd C:\Python27\Scripts\
+
 > python easy-install-script.py pywinusb
