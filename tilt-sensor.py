@@ -11,55 +11,34 @@ import os
 import json
 from msvcrt import kbhit
 
-def record():
-    running = 1
-    print ("Writing sensor data to: \n%s. \n\"Ctrl-C\" to quit" 
-           % settings.OUTPUT_FILE)
-    while running:
-        try:
-            angle = get_angle()
-            open(settings.OUTPUT_FILE, 'wb').write(
-                json.dumps([{"angle": angle}]))
-#            os.rename(settings.OUTPUT_FILE + ".temp", 
-#                      settings.OUTPUT_FILE)
-
-            if not settings.SILENT:
-                print "\nSensor angle: " + str(angle)
-            time.sleep(settings.RATE)
-
-        except (KeyboardInterrupt, SystemExit):
-            running = 0
-
-def get_angle():
-    angle = 0
-    return angle
-
 def data_handler(data):
-    print ("data: %s" % data)
+    if settings.DEBUG:
+        print ("data: %s" % data[:6])
+    angle = int(data[3:6])/1000
 
-devices = hid.find_all_hid_devices()
-usage = hid.get_full_usage_id(0xff00, 0x01)
+#HID request message
 buffer = [0x00]*65
 buffer[0]=0x0 #Endpoint
 buffer[0]=0x0 #0x00 - Read, 0x01 - Write (0x02 is response code)
-buffer[2]=0x5 #parameter identifier
+buffer[2]=0x5 #parameter identifier (0x05: single-axis angle)
 
-if not devices:
+#
+device = hid.find_all_hid_devices()[0]
+if not device:
     print("Can't find HID device!")
-
 else:
-
-    device = devices[0]
-    print device
     try:
         device.open()
-        reports = device.find_output_reports()
-        report = reports[0]
         device.set_raw_data_handler(data_handler)
-#        print report.get_raw_data()
+        report = device.find_output_reports()[0]
         while not kbhit():
-            time.sleep(0.5)
             report.send(buffer)
+            open(settings.OUTPUT_FILE, 'wb').write(
+                 json.dumps([{"angle": angle}]))
+            os.rename(settings.OUTPUT_FILE + ".temp", 
+                      settings.OUTPUT_FILE)
+            if not settings.SILENT:
+                print "\nSensor angle: " + str(angle)
+            time.sleep(settings.RATE)
     finally:
         device.close()
-#record()
