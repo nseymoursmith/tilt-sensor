@@ -28,7 +28,7 @@ def data_handler(data):
         angle += temp
     angle = getSignedNumber(angle, 32)
     angle /= 1000
-    angle += settings.OFFSET
+    angle -= settings.OFFSET
     for i in range(len(settings.RANGES)):
         if angle < settings.RANGES[i]:
             output = i+1
